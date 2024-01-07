@@ -218,7 +218,7 @@ doOptMain(int argc, char *argv[])
     }
 
     /* set "append a newline character if not present" mode */
-    if (XrmGetResource(opt_db, "xclip.appendnl", "Xclip.ApLastNl", &rec_typ, &rec_val)
+    if (XrmGetResource(opt_db, "xclip.appendnl", "Xclip.AppendNl", &rec_typ, &rec_val)
 	) {
 	fapnl = T;
     }
@@ -381,13 +381,7 @@ doIn(Window win, const char *progname)
 
     /* in mode */
     sel_all = 16;		/* Reasonable ballpark figure */
-    if (fapnl) {
-	/* Reserve a character for newline */
-	sel_buf = xcmalloc((sel_all + 1) * sizeof(char));
-    }
-    else {
-	sel_buf = xcmalloc(sel_all * sizeof(char));
-    }
+    sel_buf = xcmalloc(sel_all * sizeof(char));
 
     /* Put chars into inc from stdin or files until we hit EOF */
     do {
@@ -449,6 +443,14 @@ doIn(Window win, const char *progname)
 
     /* append a newline character if necessary */
     if (fapnl && sel_len && sel_buf[sel_len - 1] != '\n') {
+	/* Reserve space if sel_buf is full */
+	if (sel_len == sel_all) {
+	    sel_all++;
+	    sel_buf = (unsigned char *) xcrealloc(sel_buf, sel_all * sizeof(char) );
+	    if (xcverb >= ODEBUG) {
+		fprintf(stderr, "xclip: debug: Increased buffersize to %ld\n", sel_all);
+	    }
+	}
 	sel_buf[sel_len] = '\n';
 	sel_len++;
     }
